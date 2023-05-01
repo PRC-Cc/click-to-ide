@@ -1,5 +1,5 @@
-node_modules
-dist
-es
-plugins
+/node_modules
+/dist
+/es
+/plugins
 yarn.lock
