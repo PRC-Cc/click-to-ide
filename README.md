@@ -1,6 +1,6 @@
 ## click-to-ide
 
-用于审查页面元素后跳转 IDE。适用于 webpack + babel + react + vscode
+用于审查元素后跳转 IDE。适用于 webpack + babel + react + vscode。
 
 ### 集成
 
@@ -16,7 +16,7 @@ npm install click-to-ide
 + plugins: ["click-to-ide/plugins"]
 ```
 
-3. 引入组件（生产环境不生效，可tree shaking）
+3. 引入组件（生产环境不生效，可 tree shaking）
 
 ```diff
 import ClickToIDE from "click-to-ide";
@@ -27,5 +27,5 @@ return <>
 
 ### 操作
 
-1. alt + 左键 => 查看单一节点信息
-2. alt + 右键 => 查看多节点信息
+1. alt/option + 左键 => 查看单一节点信息
+2. alt/option + 右键 => 查看多节点信息

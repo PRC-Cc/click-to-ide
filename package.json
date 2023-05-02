@@ -1,9 +1,14 @@
 {
   "name": "click-to-ide",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "click react element to ide",
   "main": "dist/index.js",
   "module": "es/index.js",
+  "homepage": "https://github.com/PRC-Cc/click-to-ide",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PRC-Cc/click-to-ide.git"
+  },
   "files": [
     "dist",
     "es",
@@ -18,8 +23,8 @@
     "react",
     "ide"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "cache007",
+  "license": "MIT",
   "peerDependencies": {
     "react": ">=16.8.0"
   },
