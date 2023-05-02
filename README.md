@@ -10,13 +10,13 @@
 npm install click-to-ide
 ```
 
-2. 配置 babel
+2. 配置 babel（生产环境不生效）
 
 ```diff
 + plugins: ["click-to-ide/plugins"]
 ```
 
-3. 引入组件
+3. 引入组件（生产环境不生效，可tree shaking）
 
 ```diff
 import ClickToIDE from "click-to-ide";

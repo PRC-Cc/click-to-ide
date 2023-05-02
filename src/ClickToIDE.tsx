@@ -32,29 +32,18 @@ const compute = (popup: HTMLElement, top: number, _bottom: number) => {
 
   const bottom = windowHeight - _bottom;
 
-  let topDiff = popupHeight - top - 10;
-  let downDiff = popupHeight - bottom - 10;
+  let topDiff = top - popupHeight - 10;
+  let downDiff = bottom - popupHeight - 10;
 
-  if (topDiff > 0) {
-    if (downDiff > 0) {
-      // 两者都展示不下，展示 diff 小的，并设置固定高度
-      let newTop;
-      let newHeight;
-      if (topDiff > downDiff) {
-        // 展示下方
-        newTop = windowHeight - bottom + 10 + "px";
-        newHeight = bottom - 10 + "px";
-      } else {
-        newTop = 0 + "px";
-        newHeight = top - 10 + "px";
-      }
-      popup.style.top = newTop;
-      popup.style.height = newHeight;
+  if (topDiff < 0) {
+    if (downDiff < 0) {
+      popup.style.top = 0 + "px";
+      popup.style.height = "auto";
     } else {
       // 上方展示不下，展示下方
       popup.style.top = windowHeight - bottom + 10 + "px";
     }
-  } else if (downDiff > 0) {
+  } else if (downDiff < 0) {
     // 下方展示不下，展示上
     popup.style.top = top - 10 - popupHeight + "px";
   }
@@ -75,7 +64,7 @@ const getSourceByElement = (element: any, isFiber?: "isFiber") => {
   const line = fiber.memoizedProps?.["data-inspector-line"];
   const column = fiber.memoizedProps?.["data-inspector-column"];
   const path = fiber.memoizedProps?.["data-inspector-file-path"];
-  const displayName = fiber.memoizedProps?.["__displayName"];
+  const displayName = fiber.memoizedProps?.["__displayname"];
 
   if (!path) return;
   return {
@@ -144,6 +133,8 @@ const ClickToIDE = () => {
   const [showAll, setShowAll] = useState(false);
   const showAllRef = useNewRef(showAll);
   const popupRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canInteractRef = useRef(false);
 
   useEffect(() => {
     if (target) {
@@ -186,11 +177,21 @@ const ClickToIDE = () => {
     setRect({});
     setList([]);
     setTarget(undefined);
+    document.body.style.overflow = "auto";
+    document.body.style.marginRight = 0 + "px";
   }, []);
+
+  useLayoutEffect(() => {
+    if (!popupRef.current) return;
+    popupRef.current.style.height = "auto";
+  }, [target]);
 
   const onMouseMove = useCallback((e: any) => {
     const { target } = e;
     if (!target) return;
+    if (containerRef.current?.contains(target)) {
+      return;
+    }
     setTarget((_target) => (target === _target ? _target : target));
   }, []);
 
@@ -199,9 +200,7 @@ const ClickToIDE = () => {
       if (showAllRef.current) {
         // 点击弹窗外部，关闭弹窗
         if (!popupRef.current?.contains(e.target)) {
-          setRect({});
-          setTarget(undefined);
-          setList([]);
+          handleClear();
           document.removeEventListener("click", onClick, { capture: true });
           document.removeEventListener("mousemove", onMouseMove, {
             capture: true,
@@ -224,6 +223,13 @@ const ClickToIDE = () => {
   const onContextMenu = useCallback((e: any) => {
     e.preventDefault();
     setShowAll(true);
+    canInteractRef.current = true;
+    document.body.style.marginRight =
+      window.innerWidth - document.documentElement.clientWidth + "px";
+    document.body.style.overflow = "hidden";
+    document.removeEventListener("mousemove", onMouseMove, {
+      capture: true,
+    });
   }, []);
 
   const onKeyDown = useCallback(
@@ -231,6 +237,7 @@ const ClickToIDE = () => {
       if (e.key === "Alt") {
         handleClear();
         setShowAll(false);
+        canInteractRef.current = false;
         document.addEventListener("mousemove", onMouseMove, { capture: true });
         document.addEventListener("contextmenu", onContextMenu, {
           capture: true,
@@ -275,20 +282,33 @@ const ClickToIDE = () => {
   }, [onMouseMove, onKeyDown, onKeyUp]);
 
   return (
-    <>
+    <div ref={containerRef}>
       <style
         dangerouslySetInnerHTML={{
           __html: `
         .click-to-ide-popup{
           overflow-y: auto;
+          font-size: 16px;
         }
-        .click-to-ide-popup .item{
+        .click-to-ide-popup .click-to-ide-popup-item{
           cursor: pointer;
           padding: 5px;
           border-radius: 5px;
         }
-        .click-to-ide-popup .item:hover{
-          background: aliceblue;
+        .click-to-ide-popup-item>*:first-child{
+          color: #456CE2;
+          font-weight: bolder;
+        }
+        .click-to-ide-popup-item>*:last-child{
+          color: #000;
+          font-size: 14px;
+          opacity: 0.5;
+        }
+        .click-to-ide-popup .click-to-ide-popup-item:hover{
+          background: #416AE0;
+        }
+        .click-to-ide-popup .click-to-ide-popup-item:hover>*{
+          color: #fff;
         }
         `,
         }}
@@ -301,7 +321,7 @@ const ClickToIDE = () => {
           top: rect.top,
           width: rect.width,
           height: rect.height,
-          border: "1px solid red",
+          border: "2px solid lightgreen",
           pointerEvents: "none",
           zIndex: 9999,
           display: target && rect.top !== undefined ? "block" : "none",
@@ -317,22 +337,24 @@ const ClickToIDE = () => {
             position: "fixed",
             left: rect.left,
             top: rect.top + rect.height + 10,
-            backgroundColor: "#ccc",
+            backgroundColor: "#fff",
             zIndex: 9999,
             height: "auto",
             minWidth: 300,
+            pointerEvents: canInteractRef.current ? "auto" : "none",
+            boxSizing: "border-box",
+            boxShadow:
+              "0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)",
           }}
         >
           {list.map((item, index) => {
             return (
               <div
                 key={index}
-                className="item"
+                className="click-to-ide-popup-item"
                 onClick={() => {
                   jump(item.jumpUrl);
-                  setRect({});
-                  setList([]);
-                  setTarget(undefined);
+                  handleClear();
                 }}
               >
                 <div>{item.title}</div>
@@ -342,7 +364,7 @@ const ClickToIDE = () => {
           })}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

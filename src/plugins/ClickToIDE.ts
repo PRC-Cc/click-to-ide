@@ -117,7 +117,7 @@ export const doJSXOpeningElement: NodeHandler<
     ? null
     : jsxAttribute(
         jsxIdentifier("data-inspector-column"),
-        stringLiteral(column.toString())
+        stringLiteral((column + 1).toString())
       );
 
   const filePathAttr: JSXAttribute = jsxAttribute(
@@ -167,7 +167,7 @@ export const createVisitor = (): Visitor<PluginPass> => {
           if (specifiers.includes(compareName)) {
             node.attributes.push(
               jsxAttribute(
-                jsxIdentifier("__displayName"),
+                jsxIdentifier("__displayname"),
                 stringLiteral(parseName)
               )
             );
