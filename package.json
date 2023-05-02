@@ -1,6 +1,6 @@
 {
   "name": "click-to-ide",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "click react element to ide",
   "main": "dist/index.js",
   "module": "es/index.js",
