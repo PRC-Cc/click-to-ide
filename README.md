@@ -7,7 +7,7 @@
 1. 安装
 
 ```sh
-npm install click-to-ide
+npm install click-to-ide --save-dev
 ```
 
 2. 配置 babel（生产环境不生效）

@@ -255,7 +255,7 @@ const ClickToIDE = () => {
     setShowAll(true);
     canInteractRef.current = true;
     Object.assign(document.body.style, {
-      marginRight: window.innerWidth - document.body.clientWidth,
+      marginRight: window.innerWidth - document.body.clientWidth + "px",
       overflow: "hidden",
     });
     document.removeEventListener("mousemove", onMouseMove, {
