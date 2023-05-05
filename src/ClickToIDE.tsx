@@ -6,6 +6,34 @@ import React, {
   useLayoutEffect,
 } from "react";
 
+if (typeof Object.assign != "function") {
+  Object.assign = function (target: any) {
+    // .length of function is 2
+    "use strict";
+    if (target == null) {
+      // TypeError if undefined or null
+      throw new TypeError("Cannot convert undefined or null to object");
+    }
+
+    var to = Object(target);
+
+    for (var index = 1; index < arguments.length; index++) {
+      var nextSource = arguments[index];
+
+      if (nextSource != null) {
+        // Skip over if undefined or null
+        for (var nextKey in nextSource) {
+          // Avoid bugs when hasOwnProperty is shadowed
+          if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+            to[nextKey] = nextSource[nextKey];
+          }
+        }
+      }
+    }
+    return to;
+  };
+}
+
 function findReact(dom: any) {
   let key = Object.keys(dom).find((key) => key.startsWith("__reactFiber$"));
   const internalInstance = key ? dom[key] : null;
@@ -38,7 +66,9 @@ const compute = (popup: HTMLElement, top: number, _bottom: number) => {
   if (topDiff < 0) {
     if (downDiff < 0) {
       popup.style.top = 0 + "px";
-      popup.style.height = "auto";
+      if (popupHeight > windowHeight) {
+        popup.style.height = windowHeight + "px";
+      }
     } else {
       // 上方展示不下，展示下方
       popup.style.top = windowHeight - bottom + 10 + "px";
@@ -224,10 +254,14 @@ const ClickToIDE = () => {
     e.preventDefault();
     setShowAll(true);
     canInteractRef.current = true;
-    document.body.style.marginRight =
-      window.innerWidth - document.documentElement.clientWidth + "px";
-    document.body.style.overflow = "hidden";
+    Object.assign(document.body.style, {
+      marginRight: window.innerWidth - document.body.clientWidth,
+      overflow: "hidden",
+    });
     document.removeEventListener("mousemove", onMouseMove, {
+      capture: true,
+    });
+    document.removeEventListener("contextmenu", onContextMenu, {
       capture: true,
     });
   }, []);
@@ -314,7 +348,6 @@ const ClickToIDE = () => {
         }}
       ></style>
       <div
-        className="click-to-ide-line"
         style={{
           position: "fixed",
           left: rect.left,
