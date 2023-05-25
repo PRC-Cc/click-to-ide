@@ -165,6 +165,7 @@ const ClickToIDE = () => {
   const popupRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canInteractRef = useRef(false);
+  const isAltRef = useRef(false);
 
   useEffect(() => {
     if (target) {
@@ -209,6 +210,7 @@ const ClickToIDE = () => {
     setTarget(undefined);
     document.body.style.overflow = "auto";
     document.body.style.marginRight = 0 + "px";
+    isAltRef.current = false;
   }, []);
 
   useLayoutEffect(() => {
@@ -272,12 +274,16 @@ const ClickToIDE = () => {
         handleClear();
         setShowAll(false);
         canInteractRef.current = false;
+
+        isAltRef.current = true;
         document.addEventListener("mousemove", onMouseMove, { capture: true });
         document.addEventListener("contextmenu", onContextMenu, {
           capture: true,
         });
         document.addEventListener("click", onClick, { capture: true });
       } else if (e.key === "Escape") {
+        handleClear();
+      } else if (isAltRef.current === true) {
         handleClear();
       }
     },
