@@ -4,6 +4,23 @@ const pkg = require("./package.json");
 
 module.exports = [
   {
+    input: "src/toIDE.ts",
+    output: [
+      {
+        dir: "dist",
+        format: "umd",
+        name: "toIDE"
+      },
+    ],
+    plugins: [
+      typescript({
+        tsconfigOverride: {
+          exclude: ["src/plugins"],
+        },
+      }),
+    ],
+  },
+  {
     input: "src/index.ts",
     output: [
       {

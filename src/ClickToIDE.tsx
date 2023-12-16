@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useLayoutEffect,
-} from "react";
+import React, { useCallback, useRef, useState, useEffect } from "react";
 
 if (typeof Object.assign != "function") {
   Object.assign = function (target: any) {
@@ -35,7 +29,7 @@ if (typeof Object.assign != "function") {
 }
 
 function findReact(dom: any) {
-  let key = Object.keys(dom).find((key) => key.startsWith("__reactFiber$"));
+  let key = Object.keys(dom).find((key) => key.startsWith("__reactFiber$") || key.startsWith("__reactInternalInstance"));
   const internalInstance = key ? dom[key] : null;
   return internalInstance;
 }
@@ -91,16 +85,26 @@ const getSourceByElement = (element: any, isFiber?: "isFiber") => {
       ? fiber.type
       : fiber.type?.name || fiber.type?.displayName;
 
-  const line = fiber.memoizedProps?.["data-inspector-line"];
-  const column = fiber.memoizedProps?.["data-inspector-column"];
-  const path = fiber.memoizedProps?.["data-inspector-file-path"];
+  const line =
+    fiber.memoizedProps?.["data-inspector-line"] ||
+    fiber._debugSource?.lineNumber;
+  const column =
+    fiber.memoizedProps?.["data-inspector-column"] ||
+    fiber._debugSource?.columnNumber;
+  const path =
+    fiber.memoizedProps?.["data-inspector-file-path"] ||
+    fiber._debugSource?.fileName;
   const displayName = fiber.memoizedProps?.["__displayname"];
 
   if (!path) return;
   return {
     stateNode: fiber.stateNode,
     originType: fiber.type,
-    type: displayName ?? fiberType ?? element?.tagName?.toLowerCase?.(),
+    type:
+      displayName ??
+      fiberType ??
+      element?.tagName?.toLowerCase?.() ??
+      "Anonymous",
     path: path ? path.replace(/^.*(src.*)/, "$1") : path,
     originPath: path,
     column,
@@ -156,7 +160,7 @@ const useNewRef = <T,>(a: T, immediate = true) => {
 const ClickToIDE = () => {
   const [rect, setRect] = useState<any>({});
   const [list, setList] = useState<
-    { description: string; title: string; jumpUrl: string }[]
+    { description: string; title: string; subTitle: string; jumpUrl: string }[]
   >([]);
   const listRef = useNewRef(list);
   const [target, setTarget] = useState<HTMLElement>();
@@ -183,8 +187,15 @@ const ClickToIDE = () => {
           o.type = item.type;
         }
         const { column, line, originPath, path, type } = o;
+        const { type: parentType } = rs[index + 1] ?? {};
         return {
-          title: index === 0 ? `${targetTag} in <${type}>` : type,
+          title: index === 0 ? targetTag : type,
+          subTitle:
+            index === 0
+              ? `in <${type}>`
+              : parentType
+              ? `in <${parentType}>`
+              : "",
           description: `${path}:${line}:${column}`,
           jumpUrl: `${originPath}:${line}:${column}`,
         };
@@ -193,7 +204,7 @@ const ClickToIDE = () => {
     }
   }, [showAll, target]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!popupRef.current) return;
     if (!popupRef.current) return;
     compute(popupRef.current, rect.top, rect.bottom);
@@ -213,7 +224,7 @@ const ClickToIDE = () => {
     isAltRef.current = false;
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!popupRef.current) return;
     popupRef.current.style.height = "auto";
   }, [target]);
@@ -339,6 +350,10 @@ const ClickToIDE = () => {
           color: #456CE2;
           font-weight: bolder;
         }
+        .click-to-ide-popup-item>*:first-child>span{
+          color: #000;
+          opacity: 0.5;
+        }
         .click-to-ide-popup-item>*:last-child{
           color: #000;
           font-size: 14px;
@@ -396,7 +411,9 @@ const ClickToIDE = () => {
                   handleClear();
                 }}
               >
-                <div>{item.title}</div>
+                <div>
+                  {item.title} <span>{item.subTitle}</span>
+                </div>
                 <div>{item.description}</div>
               </div>
             );
