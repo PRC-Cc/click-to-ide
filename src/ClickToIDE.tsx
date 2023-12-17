@@ -392,7 +392,7 @@ const ClickToIDE = () => {
             left: rect.left,
             top: rect.top + rect.height + 10,
             backgroundColor: "#fff",
-            zIndex: 9999,
+            zIndex: 10000,
             height: "auto",
             minWidth: 300,
             pointerEvents: canInteractRef.current ? "auto" : "none",

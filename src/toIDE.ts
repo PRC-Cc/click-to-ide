@@ -67,7 +67,8 @@ const getSourceByElement = (element: any, isFiber?: "isFiber") => {
   fiberType =
     typeof fiber.type === "string"
       ? fiber.type
-      : fiber.type?.name || fiber.type?.displayName;
+      : (fiber.type?.name || fiber.type?.displayName) ??
+        fiber.type?.["$$typeof"]?.toString();
 
   const line =
     fiber.memoizedProps?.["data-inspector-line"] ||
@@ -104,6 +105,7 @@ const findElement = (element: HTMLElement, level = 1) => {
   while (remainingLevel > 0) {
     if (!currentFiber) break;
     const source = getSourceByElement(currentFiber, "isFiber");
+
     if (!source || !source?.type || !source?.path || source.stateNode) {
       currentFiber = currentFiber.return;
       continue;
@@ -149,8 +151,6 @@ class Store {
   };
 }
 
-class EventHandle {}
-
 class PopupHandle {
   popupEle: HTMLElement;
   maskEle: HTMLElement;
@@ -173,7 +173,7 @@ class PopupHandle {
     border-radius: 5px;
     position: fixed;
     background-color: #fff;
-    z-index: 9999;
+    z-index: 10000;
     height: auto;
     min-width: 300px;
     box-sizing: border-box;
@@ -216,7 +216,7 @@ class PopupHandle {
     document.head.appendChild(styleEle);
   };
   getContainer = () => {
-    return this.popupEle;
+    return this.contentEle;
   };
   private addEle = (subscribe: typeof Store.prototype.subscribe) => {
     const popupEle = document.createElement("div");
@@ -360,34 +360,42 @@ class ClickToIDE {
     const showAll = this.store.get("showAll");
     if (target) {
       const rect = target.getBoundingClientRect();
-      let currentFiber = findReact(target);
-      const source = getSourceByElement(currentFiber, "isFiber");
-      console.log("target: ", target);
       const rs = findElement(target, showAll ? +Infinity : 1);
-      console.log("rs: ", rs);
+
+      // if (!source) return;
       if (rs.length === 0) return;
       this.store.set("rect", rect);
       const targetTag = target.tagName.toLowerCase();
-      const newList = rs.map((item, index) => {
+      console.log("rs: ", rs);
+      // const mergedRs = rs;
+      let newList = [];
+      if (rs.length < 1) return;
+      const { column, line, originPath, path, type } = rs[0];
+      const firstItem = [
+        {
+          title: targetTag,
+          subTitle: `in <${type}>`,
+          description: `${path}:${line}:${column}`,
+          jumpUrl: `${originPath}:${line}:${column}`,
+        },
+      ];
+      const others = rs.map((item, index) => {
         let o = item;
-        if (index === 0 && source?.path) {
-          o = source;
-          o.type = item.type;
-        }
+        // if (index === 0 && source?.path) {
+        //   o = source;
+        //   o.type = item.type;
+        // }
         const { column, line, originPath, path, type } = o;
         const { type: parentType } = rs[index + 1] ?? {};
         return {
-          title: index === 0 ? targetTag : type,
-          subTitle:
-            index === 0
-              ? `in <${type}>`
-              : parentType
-              ? `in <${parentType}>`
-              : "",
+          title: type,
+          subTitle: parentType ? `in <${parentType}>` : "",
           description: `${path}:${line}:${column}`,
           jumpUrl: `${originPath}:${line}:${column}`,
         };
       });
+      newList = showAll ? [...firstItem, ...others] : firstItem;
+      if (newList.length < 1) return;
       this.store.set("list", newList);
     }
   };
@@ -457,6 +465,8 @@ class ClickToIDE {
   onContextMenu = (e: any) => {
     e.preventDefault();
     this.store.set("canInteract", true);
+    const a = this.store.get("showAll");
+    console.log("a: ", a);
     this.store.set("showAll", true);
     (document.body.style.marginRight =
       window.innerWidth - document.body.clientWidth + "px"),
