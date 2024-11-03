@@ -155,8 +155,8 @@ class PopupHandle {
   popupEle: HTMLElement;
   maskEle: HTMLElement;
   contentEle: HTMLElement;
-  utils: Utils;
-  constructor(utils: Utils) {
+  utils: { jump: (url: string) => void; handleClear: () => void };
+  constructor(utils: { jump: (url: string) => void; handleClear: () => void }) {
     this.utils = utils;
   }
   init = (subscribe: typeof Store.prototype.subscribe) => {
@@ -292,36 +292,18 @@ class PopupHandle {
   };
 }
 
-class Utils {
-  store: Store;
-  constructor(store: Store) {
-    this.store = store;
-  }
-  jump(url: string) {
-    const openVsCodeUrl = `vscode://file${url}`;
-    window.open(openVsCodeUrl);
-  }
-  handleClear() {
-    this.store.set("target", null);
-    this.store.set("rect", {});
-    this.store.set("list", []);
-    this.store.set("isAlt", false);
-    this.store.set("showAll", false);
-    this.store.set("canInteract", false);
-    document.body.style.overflow = "auto";
-    document.body.style.marginRight = 0 + "px";
-  }
-}
-
 class ClickToIDE {
   store: Store;
   domHandle: PopupHandle;
-  utils: Utils;
-  constructor(popupHandle: PopupHandle, store: Store, utils: Utils) {
+  // utils: Utils;
+  constructor(store: Store) {
+    // super(store);
     this.store = store;
-    this.domHandle = popupHandle;
-    this.utils = utils;
-    this.utils.handleClear();
+    this.domHandle = new PopupHandle({
+      jump: this.jump.bind(this),
+      handleClear: this.handleClear.bind(this),
+    });
+    this.handleClear();
   }
   init() {
     this.domHandle.init(this.store.subscribe);
@@ -336,7 +318,7 @@ class ClickToIDE {
 
   clear() {
     // clear store
-    this.utils.handleClear();
+    this.handleClear();
 
     // clear event
     document.removeEventListener("keydown", this.onKeyDown);
@@ -347,12 +329,7 @@ class ClickToIDE {
     document.removeEventListener("contextmenu", this.onContextMenu, {
       capture: true,
     });
-    document.removeEventListener("click", this.onClick, { capture: true });
-  }
-
-  jump(url: string) {
-    const openVsCodeUrl = `vscode://file${url}`;
-    window.open(openVsCodeUrl);
+    this.removeOnClick();
   }
 
   changeList = () => {
@@ -419,7 +396,7 @@ class ClickToIDE {
   };
   onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Alt") {
-      this.utils.handleClear();
+      this.handleClear();
       this.store.set("isAlt", true);
       document.addEventListener("mousemove", this.onMouseMove, {
         capture: true,
@@ -429,21 +406,21 @@ class ClickToIDE {
       });
       document.addEventListener("click", this.onClick, { capture: true });
     } else if (e.key === "Escape") {
-      this.utils.handleClear();
+      this.handleClear();
     } else if (this.store.get("isAlt") === true) {
-      this.utils.handleClear();
+      this.handleClear();
     }
   };
   onKeyUp = (e: KeyboardEvent) => {
     if (e.key === "Alt") {
       if (!this.store.get("showAll")) {
-        this.utils.handleClear();
+        this.handleClear();
       }
       document.removeEventListener("mousemove", this.onMouseMove, {
         capture: true,
       });
       if (!this.store.get("showAll")) {
-        document.removeEventListener("click", this.onClick, { capture: true });
+        this.removeOnClick();
       }
       document.removeEventListener("contextmenu", this.onContextMenu, {
         capture: true,
@@ -483,8 +460,8 @@ class ClickToIDE {
     if (this.store.get("showAll")) {
       // 点击弹窗外部，关闭弹窗
       if (!this.domHandle.getContainer()?.contains(e.target)) {
-        this.utils.handleClear();
-        document.removeEventListener("click", this.onClick, { capture: true });
+        this.handleClear();
+        this.removeOnClick();
         document.removeEventListener("mousemove", this.onMouseMove, {
           capture: true,
         });
@@ -495,23 +472,42 @@ class ClickToIDE {
     e.preventDefault();
     if (this.store.get("list").length === 0) return;
     const url = this.store.get("list")[0].jumpUrl;
-    this.utils.jump(url);
-    this.utils.handleClear();
+    this.jump(url);
+    this.handleClear();
     document.removeEventListener("mousemove", this.onMouseMove, {
       capture: true,
     });
+    this.removeOnClick();
+  };
+
+  removeOnClick = () => {
     document.removeEventListener("click", this.onClick, { capture: true });
   };
+
+  handleClear() {
+    this.store.set("target", null);
+    this.store.set("rect", {});
+    this.store.set("list", []);
+    this.store.set("isAlt", false);
+    this.store.set("showAll", false);
+    this.store.set("canInteract", false);
+    document.body.style.overflow = "auto";
+    document.body.style.marginRight = 0 + "px";
+  }
+
+  jump(url: string) {
+    this.removeOnClick();
+    const openVsCodeUrl = `vscode://file${url}`;
+    window.open(openVsCodeUrl);
+  }
 }
 
 try {
   // @ts-ignore
   if (!window.__CLICK_TO_IDE__SHOW) {
     const store = new Store();
-    const utils = new Utils(store);
-    const popupHandle = new PopupHandle(utils);
 
-    const clickToIDE = new ClickToIDE(popupHandle, store, utils);
+    const clickToIDE = new ClickToIDE(store);
     clickToIDE.init();
     // @ts-ignore
     window.__CLICK_TO_IDE__SHOW = clickToIDE;
