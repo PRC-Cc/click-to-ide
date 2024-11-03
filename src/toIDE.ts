@@ -295,9 +295,7 @@ class PopupHandle {
 class ClickToIDE {
   store: Store;
   domHandle: PopupHandle;
-  // utils: Utils;
   constructor(store: Store) {
-    // super(store);
     this.store = store;
     this.domHandle = new PopupHandle({
       jump: this.jump.bind(this),
@@ -343,7 +341,7 @@ class ClickToIDE {
       if (rs.length === 0) return;
       this.store.set("rect", rect);
       const targetTag = target.tagName.toLowerCase();
-      console.log("rs: ", rs);
+      // console.log("rs: ", rs);
       // const mergedRs = rs;
       let newList = [];
       if (rs.length < 1) return;
@@ -443,7 +441,6 @@ class ClickToIDE {
     e.preventDefault();
     this.store.set("canInteract", true);
     const a = this.store.get("showAll");
-    console.log("a: ", a);
     this.store.set("showAll", true);
     (document.body.style.marginRight =
       window.innerWidth - document.body.clientWidth + "px"),
