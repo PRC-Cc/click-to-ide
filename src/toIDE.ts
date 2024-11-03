@@ -440,7 +440,6 @@ class ClickToIDE {
   onContextMenu = (e: any) => {
     e.preventDefault();
     this.store.set("canInteract", true);
-    const a = this.store.get("showAll");
     this.store.set("showAll", true);
     (document.body.style.marginRight =
       window.innerWidth - document.body.clientWidth + "px"),
